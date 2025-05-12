@@ -1,7 +1,8 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 
-app= Flask(__name__)
+app = Flask(__name__)
 
+# GET route
 @app.route("/jobs")
 def get_jobs():
     jobs = [
@@ -21,3 +22,12 @@ def get_jobs():
         }
     ]
     return jsonify(jobs)
+
+#  POST route
+@app.route("/jobs", methods=["POST"])
+def add_job():
+    data = request.get_json()
+    return jsonify({
+        "message": "Job received!",
+        "job": data
+    }), 201
