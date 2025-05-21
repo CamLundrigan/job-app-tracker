@@ -2,10 +2,9 @@ from flask import Flask, jsonify, request
 import requests
 app = Flask(__name__)
 
-# GET route
-@app.route("/jobs")
-def get_jobs():
-    jobs = [
+
+
+jobs = [
         {
             "id": 1,
             "title": "Data Analyst",
@@ -21,6 +20,36 @@ def get_jobs():
             "deadline": "2025-05-15"
         }
     ]
+#POST Route
+@app.route("/save-job", methods=["POST"])
+def save_job():
+    print("✅ /save-job route hit")
+    data = request.get_json()
+    print("Received data:", data)
+
+    if not data:
+        return jsonify({"error": "No job data provided"}), 400
+
+    new_id = max([job["id"] for job in jobs], default=0) + 1
+    data["id"] = new_id
+
+    if "status" not in data:
+        data["status"] = "Saved"
+
+    jobs.append(data)
+
+    return jsonify({
+        "message": "Job saved successfully!",
+        "job": data
+    }), 201
+
+
+
+
+
+# GET route
+@app.route("/jobs")
+def get_jobs():
     return jsonify(jobs)
 
 #  POST route
@@ -52,6 +81,28 @@ def get_live_jobs():
     response = requests.get(url, headers=headers, params=querystring)  # Make the request
 
     if response.status_code == 200:
-        return jsonify(response.json()), 200  # Send results to the browser
+        results = response.json().get("data",[])
+
+        cleaned = []
+        for job in results:
+            cleaned.append({
+            "title": job.get("job_title"),
+            "company": job.get("employer_name"),
+            "location": job.get("job_city"),
+            "posted": job.get("job_posted_at_datetime_utc"),
+            "apply_link": job.get("job_apply_link")
+        })
+
+        return jsonify(cleaned), 200
+    
     else:
         return jsonify({"error": "Failed to fetch jobs"}), response.status_code
+    
+@app.route("/ping")
+def ping():
+    print("✅ /ping route hit")
+    return "pong", 200
+
+if __name__ == "__main__":
+    # this lets you run `python main.py` directly
+    app.run(debug=True)

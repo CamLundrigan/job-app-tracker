@@ -9,7 +9,9 @@ job = {
     "apply_link": "https://openai.com/careers/python-dev"
 }
 
-response = requests.post(url, json=job)
-
-print("Status Code:", response.status_code)
-print("Response:", response.text)
+try:
+    response = requests.post(url, json=job)
+    print("Status Code:", response.status_code)
+    print("Response JSON:", response.json())
+except Exception as e:
+    print("⚠️ ERROR:", e)
