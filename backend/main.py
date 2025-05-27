@@ -75,9 +75,53 @@ def save_job():
 
 
 # GET route
+
 @app.route("/jobs")
 def get_jobs():
-    return jsonify(jobs)
+    #  Open a new database connection
+    conn = get_db_connection()
+
+    #  Create a cursor for executing SQL
+    cur = conn.cursor()
+
+    #  Execute a SELECT to fetch all columns from all rows
+    cur.execute("""
+        SELECT
+            id,
+            title,
+            company,
+            location,
+            apply_link,
+            status,
+            deadline
+        FROM jobs;
+    """)
+
+    #  Fetch all result rows into a list
+    rows = cur.fetchall()
+
+    # Clean up: close cursor and connection
+    cur.close()
+    conn.close()
+
+    #  Transform sqlite3.Row objects into plain dicts
+    jobs_list = []
+    for row in rows:
+        jobs_list.append({
+            "id":        row["id"],
+            "title":     row["title"],
+            "company":   row["company"],
+            "location":  row["location"],
+            "apply_link":row["apply_link"],
+            "status":    row["status"],
+            "deadline":  row["deadline"],
+        })
+
+    # Return the list of jobs as JSON
+    return jsonify(jobs_list)
+
+
+    
 
 #  POST route
 @app.route("/jobs", methods=["POST"])
