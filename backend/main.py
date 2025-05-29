@@ -57,13 +57,32 @@ def save_job():
     if not data:
         return jsonify({"error": "No job data provided"}), 400
 
-    new_id = max([job["id"] for job in jobs], default=0) + 1
-    data["id"] = new_id
+    conn = get_db_connection()
+    cur = conn.cursor()
 
-    if "status" not in data:
-        data["status"] = "Saved"
+    # 1) Write your SQL with ? placeholders
+    sql = """
+    INSERT INTO jobs (title, company, location, apply_link, status, deadline)
+    VALUES (?, ?, ?, ?, ?, ?)
+"""
 
-    jobs.append(data)
+# 2) Prepare a tuple (or list) of values in the same order
+    params = (
+    data.get("title"),
+    data.get("company"),
+    data.get("location"),
+    data.get("apply_link"),
+    data.get("status", "Saved"),
+    data.get("deadline")
+)
+
+# 3) Execute, passing both SQL and params
+    cur.execute(sql, params)
+
+                
+                
+                
+            
 
     return jsonify({
         "message": "Job saved successfully!",
