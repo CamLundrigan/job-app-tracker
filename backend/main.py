@@ -187,6 +187,31 @@ def get_live_jobs():
     
     else:
         return jsonify({"error": "Failed to fetch jobs"}), response.status_code
+
+
+@app.route("/jobs/<int:id>")
+def delete_job(id):
+
+    conn = get_db_connection()
+
+    cur = conn.cursor()
+    
+    cur.execute("DELETE FROM jobs WHERE id = ?", (id,))
+
+    if cur.rowcount ==0:
+        cur.close()
+        conn.close()
+        return jsonify({"Error": "No existing job to delete" }),404
+
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({"message": f"Job {id} deleted"}), 200
+
+
+
+
+
     
 @app.route("/ping")
 def ping():
