@@ -50,7 +50,7 @@ jobs = [
 #POST Route
 @app.route("/save-job", methods=["POST"])
 def save_job():
-    print("✅ /save-job route hit")
+    print(" /save-job route hit")
     data = request.get_json()
     print("Received data:", data)
 
@@ -209,13 +209,29 @@ def delete_job(id):
     return jsonify({"message": f"Job {id} deleted"}), 200
 
 
+@app.route("/jobs<int:id>", methods=["PUT"])
+def update_status():
+
+    data = request.get_json()
+    if not data or "status" not in data:
+        return jsonify(" Error": "No Status provided or job not found"),404
+    conn = get_db_connection()
+
+    cur = conn.cursor()
+
+    cur.execute("UPDATE jobs SET status= ? WHERE id= ?", (data["status"],id))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({"message": f"Job {id} status updated to '{data['status']}'"}), 200
 
 
 
     
 @app.route("/ping")
 def ping():
-    print("✅ /ping route hit")
+    print(" /ping route hit")
     return "pong", 200
 
 if __name__ == "__main__":
