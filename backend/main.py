@@ -213,7 +213,7 @@ def delete_job(id):
 
 
 @app.route("/jobs/<int:id>", methods=["PUT"])
-def update_status():
+def update_status(id):
 
     data = request.get_json()
     if not data or "status" not in data:
