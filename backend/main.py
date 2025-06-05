@@ -100,23 +100,42 @@ def save_job():
 
 @app.route("/jobs")
 def get_jobs():
+    # Read the optional “status” query parameter
+    requested_status = request.args.get("status")
     #  Open a new database connection
     conn = get_db_connection()
 
     #  Create a cursor for executing SQL
     cur = conn.cursor()
-
-    #  Execute a SELECT to fetch all columns from all rows
-    cur.execute("""
-        SELECT
-            id,
-            title,
-            company,
-            location,
-            apply_link,
-            status,
-            deadline
-        FROM jobs;
+    
+    # If the frontend provided ?status=…, only select those rows:
+    if requested_status:
+        cur.execute("""
+                SELECT
+                    id,
+                    title,
+                    company,
+                    location,
+                    apply_link,
+                    status,
+                    deadline,
+                FROM jobs;
+                WHERE status = ?;
+                    
+                    """, requested_status)
+    #Otherwise return all jobs
+    else:
+     #  Execute a SELECT to fetch all columns from all rows
+        cur.execute("""
+            SELECT
+                id,
+                title,
+                company,
+                location,
+                apply_link,
+                status,
+                deadline
+            FROM jobs;
     """)
 
     #  Fetch all result rows into a list
