@@ -4,6 +4,9 @@ import sqlite3
 
 app = Flask(__name__)
 
+
+
+
 def get_db_connection():
     #create or open jobs.db
     conn = sqlite3.connect('jobs.db')
@@ -189,7 +192,7 @@ def get_live_jobs():
         return jsonify({"error": "Failed to fetch jobs"}), response.status_code
 
 
-@app.route("/jobs/<int:id>")
+@app.route("/jobs/<int:id>", methods=["DELETE"])
 def delete_job(id):
 
     conn = get_db_connection()
@@ -209,12 +212,12 @@ def delete_job(id):
     return jsonify({"message": f"Job {id} deleted"}), 200
 
 
-@app.route("/jobs<int:id>", methods=["PUT"])
+@app.route("/jobs/<int:id>", methods=["PUT"])
 def update_status():
 
     data = request.get_json()
     if not data or "status" not in data:
-        return jsonify(" Error": "No Status provided or job not found"),404
+        return jsonify({" Error": "No Status provided or job not found"}),404
     conn = get_db_connection()
 
     cur = conn.cursor()
@@ -233,6 +236,12 @@ def update_status():
 def ping():
     print(" /ping route hit")
     return "pong", 200
+
+
+# DEBUG: list all registered routes on startup
+print("== Registered routes ==")
+print(app.url_map)
+print("========================")
 
 if __name__ == "__main__":
     # this lets you run `python main.py` directly
