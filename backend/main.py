@@ -34,22 +34,7 @@ conn.close()
 
 
 
-jobs = [
-        {
-            "id": 1,
-            "title": "Data Analyst",
-            "company": "TechCorp",
-            "status": "Applied",
-            "deadline": "2025-05-10"
-        },
-        {
-            "id": 2,
-            "title": "Business Analyst",
-            "company": "BizGroup",
-            "status": "Interviewing",
-            "deadline": "2025-05-15"
-        }
-    ]
+
 #POST Route
 @app.route("/save-job", methods=["POST"])
 def save_job():
@@ -118,11 +103,11 @@ def get_jobs():
                     location,
                     apply_link,
                     status,
-                    deadline,
-                FROM jobs;
+                    deadline
+                FROM jobs
                 WHERE status = ?;
                     
-                    """, requested_status)
+                    """, (requested_status,))
     #Otherwise return all jobs
     else:
      #  Execute a SELECT to fetch all columns from all rows
@@ -182,7 +167,7 @@ def get_live_jobs():
     querystring = {  # Search terms
         "query": query,
         "page": "1",
-        "num_pages": "1"
+        "num_pages": "10"
     }
 
     headers = {  # Auth + host info for the API
