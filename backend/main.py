@@ -158,43 +158,70 @@ def add_job():
         "job": data
     }), 201
 
-@app.route("/live-jobs")  # Define a new route
+@app.route("/live-jobs")
 def get_live_jobs():
-    url = "https://jsearch.p.rapidapi.com/search"  # API endpoint
+    #  Read the search term (“query”) from the URL 
+    # If no ?query=… is provided, default to "data scientist".
+    query = request.args.get("query", "data scientist")
 
-    query = request.args.get("query", "data analyst in Canada")
+    #  Read the “page” from the URL 
+    # If no ?page=… is provided, default to the integer 1.
+    # We’ll parse it as an int and then force it to be at least 1.
+    raw_page = request.args.get("page", "1")  # This is a string, e.g. "2"
+    try:
+        page = int(raw_page)  # Convert it to an integer
+    except ValueError:
+        # If someone passed ?page=abc (not a number), we fallback to 1
+        page = 1
 
-    querystring = {  # Search terms
-        "query": query,
-        "page": "1",
-        "num_pages": "10"
+    # Now ensure page is at least 1. If page is 0 or negative, set page = 1.
+    if page < 1:
+        page = 1
+
+    #  Build the JSearch request parameters 
+    # We only want exactly one page (num_pages = "1").
+    url = "https://jsearch.p.rapidapi.com/search"
+    querystring = {
+        "query":     query,
+        "page":      str(page),   # Convert back to string because JSearch expects strings
+        "num_pages": "1"
     }
 
-    headers = {  # Auth + host info for the API
-        "X-RapidAPI-Key": "1f98f4ce5emshdef3c3943476506p128946jsn71c315b17f63",
+    #  Provide JSearch with our RapidAPI key and host 
+    headers = {
+        "X-RapidAPI-Key":  "1f98f4ce5emshdef3c3943476506p128946jsn71c63",
         "X-RapidAPI-Host": "jsearch.p.rapidapi.com"
     }
 
-    response = requests.get(url, headers=headers, params=querystring)  # Make the request
+    #  Call JSearch (make an HTTP GET)
+    response = requests.get(url, headers=headers, params=querystring)
 
+    # If JSearch returns 200 OK, process the result 
     if response.status_code == 200:
-        results = response.json().get("data",[])
+        payload = response.json()
+        results = payload.get("data", [])  # This is an array of ~10 job dicts
 
+        # “Clean” each job to include only the fields we need
         cleaned = []
         for job in results:
             cleaned.append({
-            "title": job.get("job_title"),
-            "company": job.get("employer_name"),
-            "location": job.get("job_city"),
-            "posted": job.get("job_posted_at_datetime_utc"),
-            "apply_link": job.get("job_apply_link")
-        })
+                "title":      job.get("job_title"),
+                "company":    job.get("employer_name"),
+                "location":   job.get("job_city"),
+                "posted":     job.get("job_posted_at_datetime_utc"),
+                "apply_link": job.get("job_apply_link")
+            })
 
-        return jsonify(cleaned), 200
-    
-    else:
-        return jsonify({"error": "Failed to fetch jobs"}), response.status_code
+        # Return exactly one page of results, plus metadata 
+        return jsonify({
+            "query": query,
+            "page":  page,
+            "count": len(cleaned),  # Usually ≈10, but could be fewer on the last page
+            "jobs":  cleaned
+        }), 200
 
+    #  If JSearch fails, forward an error 
+    return jsonify({"error": "Failed to fetch jobs from JSearch"}), response.status_code
 
 @app.route("/jobs/<int:id>", methods=["DELETE"])
 def delete_job(id):
