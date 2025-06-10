@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 import requests
 import sqlite3
 
@@ -32,7 +32,10 @@ conn.commit()
 cur.close()
 conn.close()
 
-
+@app.route("/")
+def home():
+#home page shows our index.html file
+    return render_template("index.html")
 
 
 #POST Route
@@ -265,7 +268,7 @@ def update_status(id):
     
 @app.route("/ping")
 def ping():
-    print(" /ping route hit")
+    
     return "pong", 200
 
 
@@ -274,6 +277,11 @@ print("== Registered routes ==")
 print(app.url_map)
 print("========================")
 
+
+
+
+
+
 if __name__ == "__main__":
-    # this lets you run `python main.py` directly
+   
     app.run(debug=True)
