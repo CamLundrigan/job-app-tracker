@@ -2,6 +2,10 @@ from flask import Flask, jsonify, request, render_template
 import requests
 import sqlite3
 
+# ── Adzuna credentials ───────────────────────────────────────────────
+ADZUNA_APP_ID  = "b975c06f"
+ADZUNA_APP_KEY = "5943dec9ff273a01ac9ff70ac185d169"
+
 app = Flask(__name__)
 
 
@@ -161,70 +165,55 @@ def add_job():
         "job": data
     }), 201
 
+
 @app.route("/live-jobs")
 def get_live_jobs():
-    #  Read the search term (“query”) from the URL 
-    # If no ?query=… is provided, default to "data scientist".
-    query = request.args.get("query", "data scientist")
-
-    #  Read the “page” from the URL 
-    # If no ?page=… is provided, default to the integer 1.
-    # We’ll parse it as an int and then force it to be at least 1.
-    raw_page = request.args.get("page", "1")  # This is a string, e.g. "2"
+    # 1) Read the “query” and “page” parameters
+    query = request.args.get("query", "").strip() or "data scientist"
+    raw_page = request.args.get("page", "1")
     try:
-        page = int(raw_page)  # Convert it to an integer
+        page = max(1, int(raw_page))
     except ValueError:
-        # If someone passed ?page=abc (not a number), we fallback to 1
         page = 1
 
-    # Now ensure page is at least 1. If page is 0 or negative, set page = 1.
-    if page < 1:
-        page = 1
-
-    #  Build the JSearch request parameters 
-    # We only want exactly one page (num_pages = "1").
-    url = "https://jsearch.p.rapidapi.com/search"
-    querystring = {
-        "query":     query,
-        "page":      str(page),   # Convert back to string because JSearch expects strings
-        "num_pages": "1"
+    # 2) Build the Adzuna URL and parameters
+    url = f"https://api.adzuna.com/v1/api/jobs/us/search/{page}"
+    params = {
+        "app_id":           ADZUNA_APP_ID,    # your Application ID
+        "app_key":          ADZUNA_APP_KEY,   # your Application Key
+        "what":             query,            # the search term
+        "results_per_page": 10,               # limit to 10 results
+        "sort_by":          "date"            # most recent first
     }
 
-    #  Provide JSearch with our RapidAPI key and host 
-    headers = {
-        "X-RapidAPI-Key":  "1f98f4ce5emshdef3c3943476506p128946jsn71c63",
-        "X-RapidAPI-Host": "jsearch.p.rapidapi.com"
-    }
+    # 3) Fetch from Adzuna
+    resp = requests.get(url, params=params)
+    if resp.status_code != 200:
+        return jsonify({"error": f"Adzuna error: {resp.status_code}"}), resp.status_code
 
-    #  Call JSearch (make an HTTP GET)
-    response = requests.get(url, headers=headers, params=querystring)
+    # 4) Parse the JSON and extract the "results" list
+    data    = resp.json()
+    results = data.get("results", [])
 
-    # If JSearch returns 200 OK, process the result 
-    if response.status_code == 200:
-        payload = response.json()
-        results = payload.get("data", [])  # This is an array of ~10 job dicts
+    # 5) Clean each result down to the fields we need
+    cleaned = []
+    for job in results:
+        cleaned.append({
+            "title":      job.get("title"),
+            "company":    job.get("company", {}).get("display_name"),
+            "location":   (job.get("location", {}).get("area") or [""])[-1],
+            "posted":     job.get("created"),
+            "apply_link": job.get("redirect_url")
+        })
 
-        # “Clean” each job to include only the fields we need
-        cleaned = []
-        for job in results:
-            cleaned.append({
-                "title":      job.get("job_title"),
-                "company":    job.get("employer_name"),
-                "location":   job.get("job_city"),
-                "posted":     job.get("job_posted_at_datetime_utc"),
-                "apply_link": job.get("job_apply_link")
-            })
+    # 6) Return exactly those 10 jobs
+    return jsonify({
+        "query": query,
+        "page":  page,
+        "count": len(cleaned),
+        "jobs":  cleaned
+    }), 200
 
-        # Return exactly one page of results, plus metadata 
-        return jsonify({
-            "query": query,
-            "page":  page,
-            "count": len(cleaned),  # Usually ≈10, but could be fewer on the last page
-            "jobs":  cleaned
-        }), 200
-
-    #  If JSearch fails, forward an error 
-    return jsonify({"error": "Failed to fetch jobs from JSearch"}), response.status_code
 
 @app.route("/jobs/<int:id>", methods=["DELETE"])
 def delete_job(id):
