@@ -15,98 +15,99 @@
 
         <div id ="live-results"></div>
 
+      <hr/>
+
+      <h2>Saved Jobs</h2>
+      <div id="saved-jobs"></div>
+
 
         <script>
-  window.onload = () => {
-    const searchInput = document.getElementById("search-input");
-    const liveResults = document.getElementById("live-results");
-    const searchBtn   = document.getElementById("search-btn");
+  
+window.onload = () => {
+  const searchInput = document.getElementById("search-input");
+  const liveResults = document.getElementById("live-results");
+  const searchBtn   = document.getElementById("search-btn");
 
-    // 1) Declare an async function
-    async function loadLiveJobs() {
-      // 2) Read and sanitize the query
-      const query = searchInput.value.trim() || "data scientist";
+  async function loadLiveJobs() {
+    const query = searchInput.value.trim() || "data scientist";
+    try {
+      const resp = await fetch(`/live-jobs?query=${encodeURIComponent(query)}&page=1`);
+      if (!resp.ok) throw new Error("Status " + resp.status);
+      const { jobs } = await resp.json();
 
-      try {
-        // 3) Make the HTTP request to /live-jobs
-        const resp = await fetch(
-          `/live-jobs?query=${encodeURIComponent(query)}&page=1`
-        );
-        // 4) Check for HTTP errors
-        if (!resp.ok) throw new Error("Status " + resp.status);
+      liveResults.innerHTML = "";
+      if (jobs.length === 0) {
+        liveResults.innerHTML = "<p>No results found.</p>";
+        return;
+      }
 
-        // 5) Parse the JSON body
-        const payload = await resp.json();
-        const jobs    = payload.jobs;  // extract the array
-
-        // 6) Clear previous results
-        liveResults.innerHTML = "";
-
-        // 7) Handle “no results”
-        if (jobs.length === 0) {
-          liveResults.innerHTML = "<p>No results found.</p>";
-          return;
-        }
-
-        // 8) For each job, create a card in the DOM
-        jobs.forEach(job => {
-          const card = document.createElement("div");
-          card.className = "job-card";
-          card.innerHTML = `
-            <h3>${job.title}</h3>
-            <p>${job.company} | ${job.location || "N/A"}</p>
-            <p><small>Posted: ${job.posted}</small></p>
-            <p><a href="${job.apply_link}" target="_blank">Apply Here</a></p>
+      // ── Here we loop and create a card for each job ────────────────
+      jobs.forEach(job => {
+        const card = document.createElement("div");
+        card.className = "job-card";
+        card.innerHTML = `
+          <h3>${job.title}</h3>
+          <p>${job.company} | ${job.location || "N/A"}</p>
+          <p><small>Posted: ${job.posted}</small></p>
+          <p>
+            <a href="${job.apply_link}" target="_blank">Apply Here</a>
             <button class="save-btn">Save</button>
-          `;
-          liveResults.appendChild(card);
-        });
+          </p>
+        `;
 
-        // 6.2.1) Select the Save button we just added
-const saveBtn = card.querySelector(".save-btn");
+        liveResults.appendChild(card);
 
-// 6.2.2) Attach the click handler
-saveBtn.onclick = async () => {
-  try {
-    // 6.2.3) POST the job data to your backend
-    const resp = await fetch("/save-job", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title:      job.title,
-        company:    job.company,
-        location:   job.location,
-        apply_link: job.apply_link
-        // status and deadline will default on the backend
-      })
-    });
-    if (!resp.ok) throw new Error("Status " + resp.status);
+        // ── Immediately after appending the card, grab and wire its Save button ──
+        const saveBtn = card.querySelector(".save-btn");
+        saveBtn.onclick = async () => {
+          try {
+            const r = await fetch("/save-job", {
+              method: "POST",
+              headers: {"Content-Type":"application/json"},
+              body: JSON.stringify({
+                title:      job.title,
+                company:    job.company,
+                location:   job.location,
+                apply_link: job.apply_link
+              })
+            });
+            if (!r.ok) throw new Error("Status " + r.status);
+            alert("Job saved successfully!");
+            loadSavedJobs();
+          } catch (err) {
+            alert("Failed to save: " + err);
+          }
+        };
+      });
 
-    // 6.2.4) Give user feedback
-    alert("Job saved successfully!");
-
-    // 6.2.5) Reload the saved‐jobs list so the new job appears
-    loadSavedJobs();
-  } catch (err) {
-    alert("Failed to save: " + err);
+    } catch (err) {
+      liveResults.innerText = "Error loading jobs: " + err;
+    }
   }
-};
+
+  async function loadSavedJobs() {
+    try{
+      const resp = await fetch("/jobs");
+      if(!resp.ok) throw new Error("Status"+ resp.status);
+
+      const jobs = await resp.json();
+
+      console.log("Saved jobs:",jobs);
 
       } catch (err) {
-        // 9) On any error, display a message
-        liveResults.innerText = "Error loading jobs: " + err;
-      }
-    }
+    // 2.1.5) If anything goes wrong, log the error
+    console.error("Failed to load saved jobs:", err);
+  }
+}
 
-    // Wire the search button
-    searchBtn.onclick = () => {
-      loadLiveJobs();
-    };
-  };
+    
+    
+  
+
+  // Wire the search button
+  searchBtn.onclick = loadLiveJobs;
+};
 </script>
 
-
-    </body>
-</html>
 
 
