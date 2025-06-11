@@ -6,8 +6,7 @@
     </head>
     <body>
         <h1>Job Tracker</h1>
-        <button id="ping-btn">Ping Backend</button>
-        <div id="ping-result"></div>
+        
         
         <!--Live jobs search UI-->
         <label for ="search-input"> Search live jobs</label>
@@ -58,9 +57,40 @@
             <p>${job.company} | ${job.location || "N/A"}</p>
             <p><small>Posted: ${job.posted}</small></p>
             <p><a href="${job.apply_link}" target="_blank">Apply Here</a></p>
+            <button class="save-btn">Save</button>
           `;
           liveResults.appendChild(card);
         });
+
+        // 6.2.1) Select the Save button we just added
+const saveBtn = card.querySelector(".save-btn");
+
+// 6.2.2) Attach the click handler
+saveBtn.onclick = async () => {
+  try {
+    // 6.2.3) POST the job data to your backend
+    const resp = await fetch("/save-job", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title:      job.title,
+        company:    job.company,
+        location:   job.location,
+        apply_link: job.apply_link
+        // status and deadline will default on the backend
+      })
+    });
+    if (!resp.ok) throw new Error("Status " + resp.status);
+
+    // 6.2.4) Give user feedback
+    alert("Job saved successfully!");
+
+    // 6.2.5) Reload the saved‐jobs list so the new job appears
+    loadSavedJobs();
+  } catch (err) {
+    alert("Failed to save: " + err);
+  }
+};
 
       } catch (err) {
         // 9) On any error, display a message
