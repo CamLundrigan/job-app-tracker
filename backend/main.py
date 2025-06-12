@@ -255,6 +255,9 @@ def update_status(id):
     return jsonify({"message": f"Job {id} status updated to '{data['status']}'"}), 200
 
 
+@app.route("/saved")
+def saved_page():
+    return render_template("saved.html")
 
     
 @app.route("/ping")
