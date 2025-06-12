@@ -74,7 +74,9 @@ def save_job():
 # 3) Execute, passing both SQL and params
     cur.execute(sql, params)
 
-                
+    conn.commit()
+    cur.close()
+    conn.close()      
                 
                 
             
@@ -177,7 +179,7 @@ def get_live_jobs():
         page = 1
 
     # 2) Build the Adzuna URL and parameters
-    url = f"https://api.adzuna.com/v1/api/jobs/us/search/{page}"
+    url = f"https://api.adzuna.com/v1/api/jobs/ca/search/{page}"
     params = {
         "app_id":           ADZUNA_APP_ID,    # your Application ID
         "app_key":          ADZUNA_APP_KEY,   # your Application Key
