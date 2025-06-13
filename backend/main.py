@@ -32,6 +32,16 @@ cur.execute("""
         deadline TEXT
     );
 """)
+
+cur.execute("""
+        CREATE TABLE IF NOT EXITS users(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL
+            
+            
+            );
+            """)
 conn.commit()
 cur.close()
 conn.close()
