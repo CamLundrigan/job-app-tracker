@@ -1,3 +1,6 @@
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask import session
+
 from flask import Flask, jsonify, request, render_template
 import requests
 import sqlite3
@@ -8,6 +11,7 @@ ADZUNA_APP_KEY = "5943dec9ff273a01ac9ff70ac185d169"
 
 app = Flask(__name__)
 
+app.secret_key = "bluebananasbouncingbravely"
 
 
 
