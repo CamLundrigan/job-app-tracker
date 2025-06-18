@@ -3,19 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <title>Job Tracker • Live Search</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   </head>
-  <body>
-    <h1>Job Tracker</h1>
+  <body class="app-body">
+    <div class="header">
+      <h1>Job Tracker</h1>
+      <p class="welcome">Welcome, {{ session.username }}!</p>
+      
+      <nav>
+        <a href="/">Home</a>
+        <a href="/saved">Saved Jobs</a>
+        <a href="/logout" class="logout-btn">Logout</a>
+      </nav>
+    </div>
 
-    <nav>
-    <a href="/">Home</a> |
-    <a href="/saved">Saved Jobs</a>
-  </nav>
-
-    <!-- Live jobs search UI -->
-    <label for="search-input">Search live jobs</label>
-    <input type="text" id="search-input" placeholder="e.g. Data Analyst" />
-    <button id="search-btn">Search</button>
+    <div class="search-section">
+      <label for="search-input">Search live jobs</label>
+      <input type="text" id="search-input" placeholder="e.g. Data Analyst" />
+      <button id="search-btn">Search</button>
+    </div>
 
     <div id="live-results"></div>
 

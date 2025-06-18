@@ -1,10 +1,11 @@
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import session
+from flask import session, redirect, url_for
 
 from flask import Flask, jsonify, request, render_template
 import requests
 import sqlite3
 from config import ADZUNA_APP_ID, ADZUNA_APP_KEY, SECRET_KEY
+from functools import wraps
 
 # ── Adzuna credentials moved to config.py ───────────────────────────────
 
@@ -12,7 +13,14 @@ app = Flask(__name__)
 
 app.secret_key = SECRET_KEY
 
-
+# Login required decorator
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 def get_db_connection():
     #create or open jobs.db
@@ -24,6 +32,8 @@ def get_db_connection():
 
 conn = sqlite3.connect('jobs.db')
 cur = conn.cursor()
+
+# Create jobs table
 cur.execute("""
     CREATE TABLE IF NOT EXISTS jobs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,27 +46,105 @@ cur.execute("""
     );
 """)
 
+# Create users table
 cur.execute("""
-        CREATE TABLE IF NOT EXITS users(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL
-            
-            
-            );
-            """)
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL
+    );
+""")
+
 conn.commit()
 cur.close()
 conn.close()
 
+# ── Authentication Routes ───────────────────────────────────────────────
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        
+        if not username or not password:
+            return render_template("login.html", error="Please fill in all fields")
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Check if user exists and password is correct
+        cur.execute("SELECT id, username, password_hash FROM users WHERE username = ?", (username,))
+        user = cur.fetchone()
+        
+        cur.close()
+        conn.close()
+        
+        if user and check_password_hash(user["password_hash"], password):
+            # Store user info in session
+            session["user_id"] = user["id"]
+            session["username"] = user["username"]
+            return redirect(url_for("home"))
+        else:
+            return render_template("login.html", error="Invalid username or password")
+    
+    return render_template("login.html")
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        confirm_password = request.form.get("confirm_password")
+        
+        if not username or not password or not confirm_password:
+            return render_template("register.html", error="Please fill in all fields")
+        
+        if password != confirm_password:
+            return render_template("register.html", error="Passwords do not match")
+        
+        if len(password) < 6:
+            return render_template("register.html", error="Password must be at least 6 characters")
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Check if username already exists
+        cur.execute("SELECT id FROM users WHERE username = ?", (username,))
+        if cur.fetchone():
+            cur.close()
+            conn.close()
+            return render_template("register.html", error="Username already exists")
+        
+        # Hash password and create user
+        password_hash = generate_password_hash(password)
+        cur.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)", (username, password_hash))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return redirect(url_for("login"))
+    
+    return render_template("register.html")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+# ── Protected Routes ───────────────────────────────────────────────────
+
 @app.route("/")
+@login_required
 def home():
-#home page shows our index.html file
+    #home page shows our index.html file
     return render_template("index.html")
 
 
 #POST Route
 @app.route("/save-job", methods=["POST"])
+@login_required
 def save_job():
     print(" /save-job route hit")
     data = request.get_json()
@@ -106,6 +194,7 @@ def save_job():
 # GET route
 
 @app.route("/jobs")
+@login_required
 def get_jobs():
     # Read the optional "status" query parameter
     requested_status = request.args.get("status")
@@ -182,6 +271,7 @@ def add_job():
 
 
 @app.route("/live-jobs")
+@login_required
 def get_live_jobs():
     # 1) Read the "query" and "page" parameters
     query = request.args.get("query", "").strip() or "data scientist"
@@ -269,6 +359,7 @@ def update_status(id):
 
 
 @app.route("/saved")
+@login_required
 def saved_page():
     return render_template("saved.html")
 
