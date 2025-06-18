@@ -4,14 +4,13 @@ from flask import session
 from flask import Flask, jsonify, request, render_template
 import requests
 import sqlite3
+from config import ADZUNA_APP_ID, ADZUNA_APP_KEY, SECRET_KEY
 
-# ── Adzuna credentials ───────────────────────────────────────────────
-ADZUNA_APP_ID  = "b975c06f"
-ADZUNA_APP_KEY = "5943dec9ff273a01ac9ff70ac185d169"
+# ── Adzuna credentials moved to config.py ───────────────────────────────
 
 app = Flask(__name__)
 
-app.secret_key = "bluebananasbouncingbravely"
+app.secret_key = SECRET_KEY
 
 
 
@@ -108,7 +107,7 @@ def save_job():
 
 @app.route("/jobs")
 def get_jobs():
-    # Read the optional “status” query parameter
+    # Read the optional "status" query parameter
     requested_status = request.args.get("status")
     #  Open a new database connection
     conn = get_db_connection()
@@ -184,7 +183,7 @@ def add_job():
 
 @app.route("/live-jobs")
 def get_live_jobs():
-    # 1) Read the “query” and “page” parameters
+    # 1) Read the "query" and "page" parameters
     query = request.args.get("query", "").strip() or "data scientist"
     raw_page = request.args.get("page", "1")
     try:
