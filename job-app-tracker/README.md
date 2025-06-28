@@ -6,15 +6,5 @@ A full-stack web application to help job seekers track, manage, and analyze thei
 
 - Save and track job applications with custom fields
 - View deadlines, statuses, and company info
-
-## 📸 Screenshots
-
-### Login Page
-![Login Page](screenshots/jobapp)
-
-### Dashboard
-![Dashboard](screenshots/jobapp2.png)
-
-
-### Saved Jobs
-![Saved Jobs](jobapp3.png)
+- Estimate match percentage based on job descriptions and your qualifications
+- Visual dashboard with filters, stats, and reminders
