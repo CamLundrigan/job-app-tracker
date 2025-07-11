@@ -1,6 +1,6 @@
 # Job Application Tracker
 
-A full-stack web application I built as a personal project to help me stay organized during my job search. It tracks and manages job applications with a login system for different users."
+A full-stack web application I built as a personal project to help me stay organized during my job search. It tracks and manages job applications with a login system for different users.
 
 ## 🚀 Features
 
